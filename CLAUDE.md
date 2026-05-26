@@ -37,16 +37,20 @@ Copy `config.example.yaml` → `config.yaml` (gitignored — never commit). Requ
 
 ```yaml
 discogs:
-  token: <your_discogs_api_token>
+  user_token: <your_discogs_api_token>
   username: <your_discogs_username>
+  play_count_field_name: "Play Count"            # exact Discogs custom field name
+  # last_played_field_name: "Last Played"        # optional — writes YYYY-MM-DD on completion
 
 audio:
-  device_name: <sounddevice input device name>   # partial match OK
+  device_name: <sounddevice input device name>   # case-insensitive substring match
 
-lastfm:                       # optional — omit to disable scrobbling
+lastfm:                                          # optional — omit to disable scrobbling
+  scrobble_enabled: true
   api_key: ...
   api_secret: ...
   session_key: ...
+  # love_on_completion: true                     # optional — Loves last track on side completion
 ```
 
 ## Architecture
@@ -83,7 +87,7 @@ All paths return a `TrackMetadata` object. The resolver is instantiated in `main
 ### Core Data Models (`src/metadata/models.py`)
 
 - **`TrackMetadata`** — central data carrier. Side-awareness properties (`side_letter`, `side_position`, `side_total`, `prev_track_title`, `next_track_title`) are computed from the tracklist. Cross-side boundary stitching: B1's `prev_track_title` returns the last track of Side A.
-- **`PlaySession`** — maintained by `ListenTracker`. `log_track()` deduplicates and sets `potential_last_track`. The `album_release_id` is latched from the **first** Discogs-sourced track only (conservative: listening to Side A only never triggers a play-count update).
+- **`PlaySession`** — maintained by `ListenTracker`. `log_track()` deduplicates and sets `potential_last_track`. The `album_release_id` / `album_instance_id` pair is latched from the **first track that has BOTH IDs** — i.e. the first DISCOGS_COLLECTION-sourced track. DISCOGS_DATABASE results (which have a release_id but no instance_id, because the user doesn't own that pressing) intentionally don't latch, so the Discogs field-update endpoint is never called with an invalid `instances/None/...` URL. Conservative: listening to Side A only never triggers a play-count update.
 - **`DisplayPalette`** — 5 RGB tuples (bg, surface, accent, text, muted) extracted from album art via Pillow color quantization. Smooth lerp transition on track change.
 
 ### Listen Tracking (`src/tracking/listen_tracker.py`)
@@ -103,7 +107,7 @@ RMS-based: `float(np.sqrt(np.mean(audio ** 2))) >= threshold`. Emits `SESSION_EN
 
 ## Testing
 
-208 tests, all async, using `pytest-asyncio` with `asyncio_mode = auto` (set in `pytest.ini`). Tests live in `tests/` and mirror the `src/` structure.
+210 tests, using `pytest-asyncio` with `asyncio_mode = auto` (set in `pytest.ini`). Async tests use that mode automatically; sync tests work normally. Tests live in `tests/` and mirror the `src/` structure.
 
 ## GitHub Push Workflow
 
@@ -116,5 +120,5 @@ Omitting the SHA on an existing file will result in a conflict error.
 
 ## Roadmap
 
-- **v1.3.1** (current): Async fix (`get_running_loop`), dependency updates
+- **v1.3.2** (current): Follow-up bug-fix sweep — completes the v1.3.1 async-loop migration (missed `resolver.py`), fixes the dirty-flag clobber that froze the pulsing dot, tightens `PlaySession` latching to refuse DB-only releases, plus network timeouts and several smaller hardening tweaks
 - **v1.4.0** (planned): Idle Screen & Recent Plays display
