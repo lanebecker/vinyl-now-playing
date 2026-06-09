@@ -68,7 +68,9 @@ AudioCapture.run()  →  SilenceDetector (sync, per-chunk)  →  RecognitionLoop
                           ListenTracker.on_silence_event()
 ```
 
-`AudioCapture` streams audio from `sounddevice`, calls `SilenceDetector.process()` synchronously on each chunk, and enqueues raw audio for `RecognitionLoop` via an `asyncio.Queue`.
+`AudioCapture` records continuously via `sd.InputStream` (v1.3.3); the PortAudio callback marshals ~0.25s blocks onto the event loop, where a pure-numpy `ChunkAssembler` (`src/audio/chunking.py`) emits a `chunk_seconds` window every `chunk_seconds - overlap_seconds` — consecutive chunks genuinely share `overlap_seconds` of audio. Each chunk goes synchronously to `SilenceDetector.process()` and is enqueued for `RecognitionLoop` via an `asyncio.Queue`.
+
+Shutdown is cancellation-based (v1.3.3): SIGINT/SIGTERM cancel the gathered coroutines; `main()`'s `finally` block stops capture and display. Never call `loop.stop()` inside `asyncio.run()`. Fire-and-forget `create_task()` calls must keep a strong reference (see `_bg_tasks` in `ListenTracker` / `DisplayRenderer`).
 
 ### Recognition & Confirmation Gate
 
@@ -83,6 +85,8 @@ Before committing a track, the loop requires `confirmation_required` (default: 2
 3. **MusicBrainz fallback** — for albums not on Discogs
 
 All paths return a `TrackMetadata` object. The resolver is instantiated in `main.py` and injected into `RecognitionLoop`.
+
+Results are cached per normalized `(artist, album)` key (v1.3.3) so every track on an LP doesn't repeat the same 30-request Discogs lookup — bounded at 64 albums; fallback results are cached only when both Discogs tiers completed without raising. `DiscogsClient._request()` retries once on HTTP 429, honoring `Retry-After` (clamped to 30s).
 
 ### Core Data Models (`src/metadata/models.py`)
 
@@ -99,7 +103,7 @@ All paths return a `TrackMetadata` object. The resolver is instantiated in `main
 ### Display (`src/display/`)
 
 - **`layouts.py`** — pure geometry: `NowPlayingLayout` dataclass with named `Rect(x, y, w, h)` regions (header_strip, cover_art, track_text, divider, artist_text, album_text, genre_chips, meta_text, prev_next). All values relative to 1024×600 and scaled proportionally.
-- **`renderer.py`** — all drawing logic (Pillow + pygame). Title claims natural height; secondary elements flow downward (dynamic push-down added in v1.2.1).
+- **`renderer.py`** — all drawing logic (Pillow + pygame). Title claims natural height; secondary elements flow downward (dynamic push-down added in v1.2.1). The render loop self-re-dirties at ~10 fps to animate the pulsing dot, so hot-path work must be cached: scaled cover Surfaces (keyed by url+size), the gradient background (keyed by palette+size), and palettes all use the shared `_BoundedCache` (v1.3.3). `PlayerState.set_track()` notifies listeners on EVERY call, not just status changes — the renderer's cover prefetch and palette transitions depend on this (v1.3.3 bug fix; regression-tested in `tests/test_player_state.py`).
 
 ### Silence Detection (`src/audio/silence.py`)
 
@@ -107,7 +111,7 @@ RMS-based: `float(np.sqrt(np.mean(audio ** 2))) >= threshold`. Emits `SESSION_EN
 
 ## Testing
 
-210 tests, using `pytest-asyncio` with `asyncio_mode = auto` (set in `pytest.ini`). Async tests use that mode automatically; sync tests work normally. Tests live in `tests/` and mirror the `src/` structure.
+261 tests, using `pytest-asyncio` with `asyncio_mode = auto` (set in `pytest.ini`). Async tests use that mode automatically; sync tests work normally. Tests live in `tests/` and mirror the `src/` structure. None require hardware, network, pygame, or sounddevice — keep it that way: hardware-adjacent logic should be factored into pure modules (the `ChunkAssembler` / `_BoundedCache` pattern) so it stays testable.
 
 ## GitHub Push Workflow
 
@@ -120,5 +124,5 @@ Omitting the SHA on an existing file will result in a conflict error.
 
 ## Roadmap
 
-- **v1.3.2** (current): Follow-up bug-fix sweep — completes the v1.3.1 async-loop migration (missed `resolver.py`), fixes the dirty-flag clobber that froze the pulsing dot, tightens `PlaySession` latching to refuse DB-only releases, plus network timeouts and several smaller hardening tweaks
+- **v1.3.3** (current): Deep-review bug-fix and performance sweep — `set_track()` notification fix, true overlapping capture (`InputStream` + `ChunkAssembler`), album-level metadata cache + Discogs 429 handling, render-loop caching (scaled covers, gradient), cancellation-based shutdown, strong task references, Shazam client reuse; tests 210 → 261
 - **v1.4.0** (planned): Idle Screen & Recent Plays display
