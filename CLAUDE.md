@@ -68,7 +68,7 @@ AudioCapture.run()  →  SilenceDetector (sync, per-chunk)  →  RecognitionLoop
                           ListenTracker.on_silence_event()
 ```
 
-`AudioCapture` records continuously via `sd.InputStream` (v1.3.3); the PortAudio callback marshals ~0.25s blocks onto the event loop, where a pure-numpy `ChunkAssembler` (`src/audio/chunking.py`) emits a `chunk_seconds` window every `chunk_seconds - overlap_seconds` — consecutive chunks genuinely share `overlap_seconds` of audio. Each chunk goes synchronously to `SilenceDetector.process()` and is enqueued for `RecognitionLoop` via an `asyncio.Queue`.
+`AudioCapture` records continuously via `sd.InputStream` (v1.3.3); the PortAudio callback marshals ~0.25s blocks onto the event loop, where a pure-numpy `ChunkAssembler` (`src/audio/chunking.py`) emits a `chunk_seconds` window every `chunk_seconds - overlap_seconds` — consecutive chunks genuinely share `overlap_seconds` of audio. Each chunk goes synchronously to `SilenceDetector.process()` and is enqueued for `RecognitionLoop` via an `asyncio.Queue`. `MUSIC_STARTED` transitions the display to LISTENING only from IDLE (v1.3.4) — during side flips the now-playing card stays up and updates in place.
 
 Shutdown is cancellation-based (v1.3.3): SIGINT/SIGTERM cancel the gathered coroutines; `main()`'s `finally` block stops capture and display. Never call `loop.stop()` inside `asyncio.run()`. Fire-and-forget `create_task()` calls must keep a strong reference (see `_bg_tasks` in `ListenTracker` / `DisplayRenderer`).
 
@@ -90,13 +90,13 @@ Results are cached per normalized `(artist, album)` key (v1.3.3) so every track 
 
 ### Core Data Models (`src/metadata/models.py`)
 
-- **`TrackMetadata`** — central data carrier. Side-awareness properties (`side_letter`, `side_position`, `side_total`, `prev_track_title`, `next_track_title`) are computed from the tracklist. Cross-side boundary stitching: B1's `prev_track_title` returns the last track of Side A.
+- **`TrackMetadata`** — central data carrier. `is_last_track` (the sole gate on play-count updates) matches by tracklist POSITION, not title (v1.3.4) — duplicate-title albums can no longer phantom-count from side A. Side-awareness properties (`side_letter`, `side_position`, `side_total`, `prev_track_title`, `next_track_title`) are computed from the tracklist. Cross-side boundary stitching: B1's `prev_track_title` returns the last track of Side A.
 - **`PlaySession`** — maintained by `ListenTracker`. `log_track()` deduplicates and sets `potential_last_track`. The `album_release_id` / `album_instance_id` pair is latched from the **first track that has BOTH IDs** — i.e. the first DISCOGS_COLLECTION-sourced track. DISCOGS_DATABASE results (which have a release_id but no instance_id, because the user doesn't own that pressing) intentionally don't latch, so the Discogs field-update endpoint is never called with an invalid `instances/None/...` URL. Conservative: listening to Side A only never triggers a play-count update.
 - **`DisplayPalette`** — 5 RGB tuples (bg, surface, accent, text, muted) extracted from album art via Pillow color quantization. Smooth lerp transition on track change.
 
 ### Listen Tracking (`src/tracking/listen_tracker.py`)
 
-`on_silence_event` handles `MUSIC_STARTED` → `_start_session()` and `SESSION_ENDED` → `asyncio.create_task(_end_session())`.
+`on_silence_event` handles `MUSIC_STARTED` → `_start_session()` and `SESSION_ENDED` → `asyncio.create_task(_end_session())`. `on_track_identified` auto-splits the session when a confirmed track's `discogs_release_id` differs from the latched one (v1.3.4 — record swapped in under 45s; reliable thanks to the resolver's album cache). Constructor signature is `ListenTracker(resolver, lastfm=None)` — no config param.
 
 `_end_session()` updates Discogs Play Count + Last Played **only if** `potential_last_track AND album_release_id` are both set. Last.fm love runs independently — a Discogs failure doesn't block it. Discogs calls run via `run_in_executor` (blocking client).
 
@@ -111,7 +111,7 @@ RMS-based: `float(np.sqrt(np.mean(audio ** 2))) >= threshold`. Emits `SESSION_EN
 
 ## Testing
 
-261 tests, using `pytest-asyncio` with `asyncio_mode = auto` (set in `pytest.ini`). Async tests use that mode automatically; sync tests work normally. Tests live in `tests/` and mirror the `src/` structure. None require hardware, network, pygame, or sounddevice — keep it that way: hardware-adjacent logic should be factored into pure modules (the `ChunkAssembler` / `_BoundedCache` pattern) so it stays testable.
+271 tests, using `pytest-asyncio` with `asyncio_mode = auto` (set in `pytest.ini`). Async tests use that mode automatically; sync tests work normally. Tests live in `tests/` and mirror the `src/` structure. None require hardware, network, pygame, or sounddevice — keep it that way: hardware-adjacent logic should be factored into pure modules (the `ChunkAssembler` / `_BoundedCache` pattern) so it stays testable.
 
 ## GitHub Push Workflow
 
@@ -124,5 +124,6 @@ Omitting the SHA on an existing file will result in a conflict error.
 
 ## Roadmap
 
-- **v1.3.3** (current): Deep-review bug-fix and performance sweep — `set_track()` notification fix, true overlapping capture (`InputStream` + `ChunkAssembler`), album-level metadata cache + Discogs 429 handling, render-loop caching (scaled covers, gradient), cancellation-based shutdown, strong task references, Shazam client reuse; tests 210 → 261
+- **v1.3.4** (current): Behavior refinements from the deep-review follow-up — position-based `is_last_track`, session auto-split on album change, card stays up during side flips, dead-code removal (`PlayerStatus.SESSION_ENDED`, unused `config` param); tests 261 → 271
+- **v1.3.3**: Deep-review bug-fix and performance sweep — `set_track()` notification fix, true overlapping capture (`InputStream` + `ChunkAssembler`), album-level metadata cache + Discogs 429 handling, render-loop caching (scaled covers, gradient), cancellation-based shutdown, strong task references, Shazam client reuse; tests 210 → 261
 - **v1.4.0** (planned): Idle Screen & Recent Plays display
