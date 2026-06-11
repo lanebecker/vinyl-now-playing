@@ -8,6 +8,7 @@ Design prototype and production renderer for a vinyl now-playing display (1024×
 |------|---------|
 | `design/` | React/Babel design prototype — browser-runnable, design tool only |
 | `src/` | Production Python/Pillow/pygame renderer |
+| `src/display/assets/fonts/` | Bundled OFL fonts (Inter Tight, Newsreader, JetBrains Mono) used by the production renderer |
 | `PRODUCT.md` | Product spec |
 | `DESIGN.md` | Design system and production handoff spec |
 | `design/.impeccable/design.json` | Design system tokens for impeccable tooling |
