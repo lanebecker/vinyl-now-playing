@@ -10,7 +10,7 @@ Design prototype and production renderer for a vinyl now-playing display (1024×
 | `src/` | Production Python/Pillow/pygame renderer |
 | `PRODUCT.md` | Product spec |
 | `DESIGN.md` | Design system and production handoff spec |
-| `.impeccable/design.json` | Design system tokens for impeccable tooling |
+| `design/.impeccable/design.json` | Design system tokens for impeccable tooling |
 
 ## Prototype vs. Production
 
