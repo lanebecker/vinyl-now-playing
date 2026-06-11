@@ -131,7 +131,7 @@
     ],
     "dos": [
       "Do use the muted role at full opacity for secondary text.",
-      "Do enforce ≥60° hue separation between any two albums' accent colors in data.js. Unconstrained extraction clusters toward warm orange; the collection needs to span the hue wheel.",
+      "Do enforce ≥60° hue separation between any two albums' accent colors in design/src/data.js. Unconstrained extraction clusters toward warm orange; the collection needs to span the hue wheel.",
       "Do set alt on album cover images to '{artist} — {album}'.",
       "Do include prefers-reduced-motion guards on every continuous animation.",
       "Do protect long album titles from overflow with -webkit-line-clamp: 2.",
