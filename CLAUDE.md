@@ -2,6 +2,16 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Design Documents
+
+Three design documents live at the repo root and are the authoritative visual spec:
+
+- [`PRODUCT.md`](PRODUCT.md) — product context, users, purpose, principles, roadmap
+- [`DESIGN.md`](DESIGN.md) — visual spec: typography, colors, components, named rules
+- [`.impeccable/design.json`](.impeccable/design.json) — design system sidecar with tonal ramps, component HTML/CSS snippets, motion tokens, narrative
+
+These are kept in sync with the design prototype (`Vinyl Now Playing.html`, React/Babel), which is the design-intent source. The production renderer implements from them — check `src/display/layouts.py` (geometry), `src/display/renderer.py` (drawing), and `src/metadata/models.py` (`FALLBACK_PALETTE`) when design changes need to be reflected in code.
+
 ## Commands
 
 ```bash
