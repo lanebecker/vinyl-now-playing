@@ -1,5 +1,16 @@
 # Vinyl Now Playing
 
+<!-- SHARED-FACTS:START -->
+<!-- Auto-synced from SHARED-MEMORY.md by scripts/sync-shared-facts.py. Do NOT edit between these markers — edit the master file instead. -->
+## Gmail accounts (two Gmail MCPs connected)
+- **Personal** — `lanebecker@gmail.com` → the `mcp__gmail__*` tools (self-hosted ArtyMcLabin Gmail-MCP-Server fork; installed Jun 13 2026; scopes: gmail.modify + settings.basic).
+- **Work** — `lbecker@wikimedia.org` → the pre-existing Gmail connector.
+- Default: "my Gmail" / "personal Gmail" → the fork (`mcp__gmail__*`). Say "work Gmail" for the WMF account.
+
+## GitHub workflow
+- Always push/commit changes via the **GitHub API / MCP** (e.g. `create_or_update_file`, `push_files`) — **never** local `git` commands. (Reason: the Cowork sandbox can't authenticate a local `git push`; the GitHub MCP tools carry the PAT. This is the canonical rule — no fuller version exists; reconstructed from project references after the original "global memory" file turned out never to have been created.)
+<!-- SHARED-FACTS:END -->
+
 Design prototype and production renderer for a vinyl now-playing display (1024×600 Waveshare, Raspberry Pi).
 
 ## Repository Structure
