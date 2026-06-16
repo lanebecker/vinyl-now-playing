@@ -1,7 +1,7 @@
 # Vinyl Now Playing
 
 <!-- SHARED-FACTS:START -->
-<!-- Auto-synced from SHARED-MEMORY.md by scripts/sync-shared-facts.py. Do NOT edit between these markers — edit the master file instead. -->
+<!-- AUTO-GENERATED shared facts. Do NOT edit between the SHARED-FACTS markers, and do NOT delete the markers themselves. This block is synced into every Projects/*/CLAUDE.md by scripts/sync-shared-facts.py from the master SHARED-MEMORY.md; BOTH live in ~/Documents/Claude/ (one level ABOVE the Projects folder) and are re-run by a scheduled task. To change these facts: edit SHARED-MEMORY.md and rerun the script. Manual edits or deletions here are overwritten/restored on the next sync. -->
 ## Gmail accounts (two Gmail MCPs connected)
 - **Personal** — `lanebecker@gmail.com` → the `mcp__gmail__*` tools (self-hosted ArtyMcLabin Gmail-MCP-Server fork; installed Jun 13 2026; scopes: gmail.modify + settings.basic).
 - **Work** — `lbecker@wikimedia.org` → the pre-existing Gmail connector.
