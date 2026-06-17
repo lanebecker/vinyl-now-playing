@@ -8,7 +8,13 @@
 - Default: "my Gmail" / "personal Gmail" → the fork (`mcp__gmail__*`). Say "work Gmail" for the WMF account.
 
 ## GitHub workflow
-- Always push/commit changes via the **GitHub API / MCP** (e.g. `create_or_update_file`, `push_files`) — **never** local `git` commands. (Reason: the Cowork sandbox can't authenticate a local `git push`; the GitHub MCP tools carry the PAT. This is the canonical rule — no fuller version exists; reconstructed from project references after the original "global memory" file turned out never to have been created.)
+- **Default: local-first** (as of 2026-06-16; it's faster than the API). Claude edits files in a local clone that lives **inside the connected project folder**, runs the test suites in the sandbox, then hands Lane a `git add -A && git commit -m "…" && git push` to run on his Mac.
+- **The sandbox never runs `git`.** git's lock/hardlink operations fail on the FUSE-mounted folder ("could not lock config file … Operation not permitted") and the sandbox can't authenticate a push anyway. So cloning, committing, and pushing are all done by Lane on his Mac (native filesystem, his credentials).
+- **GitHub API / MCP (`push_files`, `create_or_update_file`) is the backup** — use it when Lane is away from his Mac or no local clone is available. (The PAT-carrying MCP tools still work; they're just no longer the default.)
+
+## Memory conventions
+- **Keep a `log.md`** — an append-only change history, newest at the bottom, each line prefixed with an ISO-8601 UTC timestamp. `scripts/sync-shared-facts.py` creates one per project and records each sync; add your own notable changes too. In a Cowork space, keep it at `memory/log.md`.
+- **Timestamp every memory entry.** Any knowledge/memory file with YAML frontmatter carries an ISO-8601 `timestamp` field; the sync script warns about `memory/*.md` entries that don't.
 <!-- SHARED-FACTS:END -->
 
 Design prototype and production renderer for a vinyl now-playing display (1024×600 Waveshare, Raspberry Pi).
