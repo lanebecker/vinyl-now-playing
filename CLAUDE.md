@@ -43,9 +43,9 @@ Open `design/index.html` in a browser (serve from the `design/` directory — lo
 
 ## Key Design Constraints
 
-- Display: 1024×600px, fixed (no responsive breakpoints)
-- Font hierarchy: Inter Tight 600 72px (song) / Inter Tight 500 48px (artist) / Newsreader italic 32px (album) / JetBrains Mono 13px (catalog) / 12px (chip) / 11px (label)
+- Display: 1024×600px target device. The renderer is actually **resolution-independent** — it reads width/height from config and scales every constant proportionally (`s = min(width/1024, height/600)`); there are no hard-coded breakpoints, but there is also no fixed artboard. (A-10)
+- Font hierarchy: Inter Tight 600 72px (song) / Inter Tight 500 48px (artist) / Newsreader italic 32px (album) / JetBrains Mono 13px (catalog) / 12px (chip) / 11px (label) — all at the 1024×600 reference, scaled by `s`
 - DisplayPalette: 5 values — bg, surface, accent, text, muted — 1s lerp on track change
-- Full-Opacity Rule: `p.muted` never gets additional `opacity` stacked on top
-- Hue Diversity Rule: ≥60° OKLCH hue separation between album accent colors
+- Full-Opacity Rule: `p.muted` never gets additional `opacity` stacked on top; it is contrast-clamped to ≥4.5:1 vs `bg` at palette-extraction time (and re-clamped during the lerp)
+- Hue Diversity Rule (**ASPIRATIONAL — not implemented**): the goal is ≥60° OKLCH hue separation between album accent colors, but there is no cross-album accent registry or OKLCH conversion in the code. `accent` is simply the most-saturated quantized color of the current cover, in isolation. (A-1)
 - WCAG AA: 4.5:1 minimum contrast on all text
