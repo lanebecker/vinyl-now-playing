@@ -16,6 +16,11 @@
 ## Memory conventions
 - **Keep a `log.md`** — an append-only change history, newest at the bottom, each line prefixed with an ISO-8601 UTC timestamp. `scripts/sync-shared-facts.py` creates one per project and records each sync; add your own notable changes too. In a Cowork space, keep it at `memory/log.md`.
 - **Timestamp every memory entry.** Any knowledge/memory file with YAML frontmatter carries an ISO-8601 `timestamp` field; the sync script warns about `memory/*.md` entries that don't.
+
+## Engineering workflow (code/tech projects only — skip for non-tech)
+- **Review + test after every completed step, unprompted.** On finishing any step that changes code: (a) review the change for correctness/regressions, (b) add or update tests covering it, (c) run the suite — *before* moving on. Don't wait to be asked; this is how the app stays maintainable.
+- **End-of-phase adversarial cold audit (agent-based).** After wrapping a significant chunk (e.g., the end of a phase), spawn an **independent subagent** to cold-audit the codebase with no inherited context — hunting for efficiency wins, architecture improvements, significant refactors, and bugs. Agent-based on purpose so Claude can **argue with it**: pressure-test and debate the findings rather than accepting them wholesale, then act on the ones that survive scrutiny.
+- **Then a documentation cold audit.** After the code audit, cold-audit ALL docs (CLAUDE.md, design docs, READMEs, CHANGELOGs, memory, log.md) to confirm every change is fully mapped and nothing slipped through the cracks.
 <!-- SHARED-FACTS:END -->
 
 Design prototype and production renderer for a vinyl now-playing display (1024×600 Waveshare, Raspberry Pi).
